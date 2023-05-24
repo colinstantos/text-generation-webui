@@ -198,12 +198,10 @@ class Handler(BaseHTTPRequestHandler):
                 'max_new_tokens': max_tokens,
                 'temperature': default(body, 'temperature', 1.0),
                 'top_p': default(body, 'top_p', 1.0),
-                'top_k': default(body, 'best_of', 1),
-                # XXX not sure about this one, seems to be the right mapping, but the range is different (-2..2.0) vs 0..2
-                # 0 is default in openai, but 1.0 is default in other places. Maybe it's scaled? scale it.
-                'repetition_penalty': 1.18,  # (default(body, 'presence_penalty', 0) + 2.0 ) / 2.0, # 0 the real default, 1.2 is the model default, but 1.18 works better.
-                # XXX not sure about this one either, same questions. (-2..2.0), 0 is default not 1.0, scale it.
-                'encoder_repetition_penalty': 1.0,  # (default(body, 'frequency_penalty', 0) + 2.0) / 2.0,
+                'top_k': default(body, 'top_k', 1),
+                'repetition_penalty': default(body, 'repetition_penalty', 1.18),
+                # 0 the real default, 1.2 is the model default, but 1.18 works better.
+                'encoder_repetition_penalty': default(body, 'encoder_repetition_penalty', 1),
                 'suffix': body.get('suffix', None),
                 'stream': default(body, 'stream', False),
                 'echo': default(body, 'echo', False),
@@ -215,20 +213,20 @@ class Handler(BaseHTTPRequestHandler):
                 # no more args.
                 'add_bos_token': shared.settings.get('add_bos_token', True),
                 'do_sample': True,
-                'typical_p': 1.0,
-                'epsilon_cutoff': 0,  # In units of 1e-4
-                'eta_cutoff': 0,  # In units of 1e-4
-                'min_length': 0,
-                'no_repeat_ngram_size': 0,
-                'num_beams': 1,
-                'penalty_alpha': 0.0,
-                'length_penalty': 1,
-                'early_stopping': False,
-                'mirostat_mode': 0,
-                'mirostat_tau': 5,
-                'mirostat_eta': 0.1,
-                'ban_eos_token': False,
-                'skip_special_tokens': True,
+                'typical_p': default(body, 'typical_p', 1.0),
+                'epsilon_cutoff': default(body, 'epsilon_cutoff', 0),  # In units of 1e-4
+                'eta_cutoff': default(body, 'eta_cutoff', 0),  # In units of 1e-4
+                'min_length': default(body, 'min_length', 0),
+                'no_repeat_ngram_size': default(body, 'no_repeat_ngram_size', 0),
+                'num_beams': default(body, 'num_beams', 1),
+                'penalty_alpha': default(body, 'penalty_alpha', 0.0),
+                'length_penalty': default(body, 'length_penalty', 1),
+                'early_stopping': default(body, 'early_stopping', False),
+                'mirostat_mode': default(body, 'mirostat_mode', 0),
+                'mirostat_tau': default(body, 'mirostat_tau', 5),
+                'mirostat_eta': default(body, 'mirostat_eta', 0.1),
+                'ban_eos_token': default(body, 'ban_eos_token', False),
+                'skip_special_tokens': default(body, 'skip_special_tokens', True),
             }
 
             # fixup absolute 0.0's
