@@ -198,6 +198,7 @@ class Handler(BaseHTTPRequestHandler):
                 'max_new_tokens': max_tokens,
                 'temperature': default(body, 'temperature', 1.0),
                 'top_p': default(body, 'top_p', 1.0),
+                'top_k': default(body, 'top_k', 1),
                 'repetition_penalty': default(body, 'repetition_penalty', 1.18),
                 # 0 the real default, 1.2 is the model default, but 1.18 works better.
                 'encoder_repetition_penalty': default(body, 'encoder_repetition_penalty', 1),
@@ -227,10 +228,6 @@ class Handler(BaseHTTPRequestHandler):
                 'ban_eos_token': default(body, 'ban_eos_token', False),
                 'skip_special_tokens': default(body, 'skip_special_tokens', True),
             }
-
-            top_k = default(body, 'top_k', 1)
-            if top_k != -1:
-                req_params['top_k'] = top_k
 
             # fixup absolute 0.0's
             for par in ['temperature', 'repetition_penalty', 'encoder_repetition_penalty']:
