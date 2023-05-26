@@ -1,3 +1,4 @@
+import ast
 import base64
 import json
 import os
@@ -88,6 +89,67 @@ def float_list_to_base64(float_list):
     # Turn raw base64 encoded bytes into ASCII
     ascii_string = encoded_bytes.decode('ascii')
     return ascii_string
+
+def replace_all(text, dic):
+    for i, j in dic.items():
+        text = text.replace(i, j)
+
+    return text
+def get_stopping_strings(state):
+    stopping_strings = []
+    if state['mode'] in ['instruct', 'chat-instruct']:
+        stopping_strings += [
+            state['turn_template'].split('<|user-message|>')[1].split('<|bot|>')[0] + '<|bot|>',
+            state['turn_template'].split('<|bot-message|>')[1] + '<|user|>'
+        ]
+
+        replacements = {
+            '<|user|>': state['name1_instruct'],
+            '<|bot|>': state['name2_instruct']
+        }
+
+        for i in range(len(stopping_strings)):
+            stopping_strings[i] = replace_all(stopping_strings[i], replacements).rstrip(' ').replace(r'\n', '\n')
+
+    if state['mode'] in ['chat', 'chat-instruct']:
+        stopping_strings += [
+            f"\n{state['name1']}:",
+            f"\n{state['name2']}:"
+        ]
+
+    stopping_strings += ast.literal_eval(f"[{state['custom_stopping_strings']}]")
+    return stopping_strings
+
+def extract_message_from_reply(reply, state):
+    next_character_found = False
+    stopping_strings = get_stopping_strings(state)
+
+    if state['stop_at_newline']:
+        lines = reply.split('\n')
+        reply = lines[0].strip()
+        if len(lines) > 1:
+            next_character_found = True
+    else:
+        for string in stopping_strings:
+            idx = reply.find(string)
+            if idx != -1:
+                reply = reply[:idx]
+                next_character_found = True
+
+        # If something like "\nYo" is generated just before "\nYou:"
+        # is completed, trim it
+        if not next_character_found:
+            for string in stopping_strings:
+                for j in range(len(string) - 1, 0, -1):
+                    if reply[-j:] == string[:j]:
+                        reply = reply[:-j]
+                        break
+                else:
+                    continue
+
+                break
+
+    return reply, next_character_found
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -227,6 +289,8 @@ class Handler(BaseHTTPRequestHandler):
                 'mirostat_eta': default(body, 'mirostat_eta', 0.1),
                 'ban_eos_token': default(body, 'ban_eos_token', False),
                 'skip_special_tokens': default(body, 'skip_special_tokens', True),
+                'generation_attempts': default(body, 'generation_attempts', 1),
+                'mode': default(body, 'mode', 'chat-instruct')
             }
 
             # fixup absolute 0.0's
@@ -393,7 +457,26 @@ class Handler(BaseHTTPRequestHandler):
             # generate reply #######################################
             if debug:
                 print({'prompt': prompt, 'req_params': req_params, 'stopping_strings': stopping_strings})
-            generator = generate_reply(prompt, req_params, stopping_strings=stopping_strings, is_chat=False)
+
+            # Generate
+            cumulative_reply = ''
+            for i in range(req_params['generation_attempts']):
+                reply = None
+                for j, reply in enumerate(generate_reply(prompt + cumulative_reply, req_params, eos_token=None,
+                                                         stopping_strings=stopping_strings, is_chat=True)):
+                    reply = cumulative_reply + reply
+
+                    # Extract the reply
+                    reply, next_character_found = extract_message_from_reply(reply, req_params)
+                    if next_character_found:
+                        break
+
+                if reply in [None, cumulative_reply]:
+                    break
+                else:
+                    cumulative_reply = reply
+
+            generator = [cumulative_reply]
 
             answer = ''
             seen_content = ''
