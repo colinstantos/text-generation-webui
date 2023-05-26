@@ -97,15 +97,18 @@ def replace_all(text, dic):
     return text
 def get_stopping_strings(state):
     stopping_strings = []
+    instruct = yaml.safe_load(
+        open(f"characters/instruction-following/{shared.settings['instruction_template']}.yaml", 'r'))
+
     if state['mode'] in ['instruct', 'chat-instruct']:
         stopping_strings += [
-            state['turn_template'].split('<|user-message|>')[1].split('<|bot|>')[0] + '<|bot|>',
-            state['turn_template'].split('<|bot-message|>')[1] + '<|user|>'
+            instruct['turn_template'].split('<|user-message|>')[1].split('<|bot|>')[0] + '<|bot|>',
+            instruct['turn_template'].split('<|bot-message|>')[1] + '<|user|>'
         ]
 
         replacements = {
-            '<|user|>': state['name1_instruct'],
-            '<|bot|>': state['name2_instruct']
+            '<|user|>': 'user',
+            '<|bot|>': 'bot'
         }
 
         for i in range(len(stopping_strings)):
