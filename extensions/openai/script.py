@@ -299,7 +299,8 @@ class Handler(BaseHTTPRequestHandler):
                 'ban_eos_token': default(body, 'ban_eos_token', False),
                 'skip_special_tokens': default(body, 'skip_special_tokens', True),
                 'generation_attempts': default(body, 'generation_attempts', 1),
-                'mode': default(body, 'mode', 'chat-instruct')
+                'mode': default(body, 'mode', 'chat-instruct'),
+                'stop_at_newline': default(body, 'stop_at_newline', False),
             }
 
             # fixup absolute 0.0's
