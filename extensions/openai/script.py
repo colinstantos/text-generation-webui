@@ -17,7 +17,7 @@ params = {
     'port': int(os.environ.get('OPENEDAI_PORT')) if 'OPENEDAI_PORT' in os.environ else 5001,
 }
 
-debug = True# if 'OPENEDAI_DEBUG' in os.environ else False
+debug = True  # if 'OPENEDAI_DEBUG' in os.environ else False
 
 # Optional, install the module and download the model to enable
 # v1/embeddings
@@ -122,10 +122,15 @@ def get_stopping_strings(state):
     if state['mode'] in ['chat', 'chat-instruct']:
         stopping_strings += [
             f"\nuser:",
-            f"\nbot:"
+            f"\nbot:",
+            '\nsystem:',
+            '\nuser:',
+            '\nhuman:',
+            '\nassistant:',
+            '\n###'
         ]
 
-    stopping_strings += ast.literal_eval(f"[{state['custom_stopping_strings']}]")
+    # stopping_strings += ast.literal_eval(f"[{state['custom_stopping_strings']}]")
     return stopping_strings
 
 
@@ -762,7 +767,7 @@ class Handler(BaseHTTPRequestHandler):
                     resp['data'].extend([{'b64_json': b64_json}])
                 else:
                     resp['data'].extend([{
-                                             'url': f'data:image/png;base64,{b64_json}'}])  # yeah it's lazy. requests.get() will not work with this
+                        'url': f'data:image/png;base64,{b64_json}'}])  # yeah it's lazy. requests.get() will not work with this
 
             response = json.dumps(resp)
             self.wfile.write(response.encode('utf-8'))
