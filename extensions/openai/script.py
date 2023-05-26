@@ -132,7 +132,7 @@ def get_stopping_strings(state):
 def extract_message_from_reply(reply, state):
     next_character_found = False
     stopping_strings = get_stopping_strings(state)
-
+    print(reply)
     if state['stop_at_newline']:
         lines = reply.split('\n')
         reply = lines[0].strip()
