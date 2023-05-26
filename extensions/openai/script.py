@@ -135,6 +135,8 @@ def extract_message_from_reply(reply, state):
     print('******************************')
     print(reply)
     print('******************************')
+    print(stopping_strings)
+    print('******************************')
     if state['stop_at_newline']:
         lines = reply.split('\n')
         reply = lines[0].strip()
