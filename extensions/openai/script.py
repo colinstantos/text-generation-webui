@@ -17,7 +17,7 @@ params = {
     'port': int(os.environ.get('OPENEDAI_PORT')) if 'OPENEDAI_PORT' in os.environ else 5001,
 }
 
-debug = True if 'OPENEDAI_DEBUG' in os.environ else False
+debug = True# if 'OPENEDAI_DEBUG' in os.environ else False
 
 # Optional, install the module and download the model to enable
 # v1/embeddings
