@@ -17,7 +17,7 @@ params = {
     'port': int(os.environ.get('OPENEDAI_PORT')) if 'OPENEDAI_PORT' in os.environ else 5001,
 }
 
-debug = True  # if 'OPENEDAI_DEBUG' in os.environ else False
+debug = True if 'OPENEDAI_DEBUG' in os.environ else False
 
 # Optional, install the module and download the model to enable
 # v1/embeddings
@@ -137,11 +137,6 @@ def get_stopping_strings(state):
 def extract_message_from_reply(reply, state):
     next_character_found = False
     stopping_strings = get_stopping_strings(state)
-    print('******************************')
-    print(reply)
-    print('******************************')
-    print(stopping_strings)
-    print('******************************')
     if state['stop_at_newline']:
         lines = reply.split('\n')
         reply = lines[0].strip()
