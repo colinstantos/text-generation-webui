@@ -31,6 +31,7 @@ embedding_model = None
 
 standard_stopping_strings = ['\nsystem:', '\nuser:', '\nhuman:', '\nassistant:', '\n###', ]
 
+
 # little helper to get defaults if arg is present but None and should be the same type as default.
 def default(dic, key, default):
     val = dic.get(key, default)
@@ -64,12 +65,13 @@ def deduce_template():
         return default_template
 
     try:
-        instruct = yaml.safe_load(open(f"characters/instruction-following/{shared.settings['instruction_template']}.yaml", 'r'))
+        instruct = yaml.safe_load(
+            open(f"characters/instruction-following/{shared.settings['instruction_template']}.yaml", 'r'))
 
         template = instruct['turn_template']
-        template = template\
-            .replace('<|user|>', instruct.get('user', ''))\
-            .replace('<|bot|>', instruct.get('bot', ''))\
+        template = template \
+            .replace('<|user|>', instruct.get('user', '')) \
+            .replace('<|bot|>', instruct.get('bot', '')) \
             .replace('<|user-message|>', '{instruction}\n{input}')
         return instruct.get('context', '') + template[:template.find('<|bot-message|>')].rstrip(' ')
     except:
@@ -90,11 +92,14 @@ def float_list_to_base64(float_list):
     ascii_string = encoded_bytes.decode('ascii')
     return ascii_string
 
+
 def replace_all(text, dic):
     for i, j in dic.items():
         text = text.replace(i, j)
 
     return text
+
+
 def get_stopping_strings(state):
     stopping_strings = []
     instruct = yaml.safe_load(
@@ -116,12 +121,13 @@ def get_stopping_strings(state):
 
     if state['mode'] in ['chat', 'chat-instruct']:
         stopping_strings += [
-            f"\n{state['name1']}:",
-            f"\n{state['name2']}:"
+            f"\nuser:",
+            f"\nbot:"
         ]
 
     stopping_strings += ast.literal_eval(f"[{state['custom_stopping_strings']}]")
     return stopping_strings
+
 
 def extract_message_from_reply(reply, state):
     next_character_found = False
@@ -332,16 +338,19 @@ class Handler(BaseHTTPRequestHandler):
 
                 # Instruct models can be much better
                 try:
-                    instruct = yaml.safe_load(open(f"characters/instruction-following/{shared.settings['instruction_template']}.yaml", 'r'))
+                    instruct = yaml.safe_load(
+                        open(f"characters/instruction-following/{shared.settings['instruction_template']}.yaml", 'r'))
 
                     template = instruct['turn_template']
                     system_message_template = "{message}"
                     system_message_default = instruct['context']
-                    bot_start = template.find('<|bot|>') # So far, 100% of instruction templates have this token
-                    user_message_template = template[:bot_start].replace('<|user-message|>', '{message}').replace('<|user|>', instruct['user'])
-                    bot_message_template = template[bot_start:].replace('<|bot-message|>', '{message}').replace('<|bot|>', instruct['bot'])
+                    bot_start = template.find('<|bot|>')  # So far, 100% of instruction templates have this token
+                    user_message_template = template[:bot_start].replace('<|user-message|>', '{message}').replace(
+                        '<|user|>', instruct['user'])
+                    bot_message_template = template[bot_start:].replace('<|bot-message|>', '{message}').replace(
+                        '<|bot|>', instruct['bot'])
                     bot_prompt = bot_message_template[:bot_message_template.find('{message}')].rstrip(' ')
-            
+
                     role_formats = {
                         'user': user_message_template,
                         'assistant': bot_message_template,
@@ -360,7 +369,8 @@ class Handler(BaseHTTPRequestHandler):
                 chat_msgs = []
 
                 # You are ChatGPT, a large language model trained by OpenAI. Answer as concisely as possible. Knowledge cutoff: {knowledge_cutoff} Current date: {current_date}
-                context_msg = role_formats['system'].format(message=role_formats['context']) if role_formats['context'] else ''
+                context_msg = role_formats['system'].format(message=role_formats['context']) if role_formats[
+                    'context'] else ''
                 if context_msg:
                     system_msgs.extend([context_msg])
 
@@ -394,7 +404,8 @@ class Handler(BaseHTTPRequestHandler):
                         chat_msg = new_msg + chat_msg
                         remaining_tokens -= new_size
                     else:
-                        print(f"Warning: too many messages for context size, dropping {len(chat_msgs) + 1} oldest message(s).")
+                        print(
+                            f"Warning: too many messages for context size, dropping {len(chat_msgs) + 1} oldest message(s).")
                         break
 
                 prompt = system_msg + chat_msg + role_formats['prompt']
@@ -420,14 +431,16 @@ class Handler(BaseHTTPRequestHandler):
                     new_len = int(len(prompt) * shared.settings['truncation_length'] / token_count)
                     prompt = prompt[-new_len:]
                     new_token_count = len(encode(prompt)[0])
-                    print(f"Warning: truncating prompt to {new_len} characters, was {token_count} tokens. Now: {new_token_count} tokens.")
+                    print(
+                        f"Warning: truncating prompt to {new_len} characters, was {token_count} tokens. Now: {new_token_count} tokens.")
                     token_count = new_token_count
 
             if req_params['truncation_length'] - token_count < req_params['max_new_tokens']:
-                print(f"Warning: Ignoring max_new_tokens ({req_params['max_new_tokens']}), too large for the remaining context. Remaining tokens: {req_params['truncation_length'] - token_count}")
+                print(
+                    f"Warning: Ignoring max_new_tokens ({req_params['max_new_tokens']}), too large for the remaining context. Remaining tokens: {req_params['truncation_length'] - token_count}")
                 req_params['max_new_tokens'] = req_params['truncation_length'] - token_count
                 print(f"Warning: Set max_new_tokens = {req_params['max_new_tokens']}")
-            
+
             # pass with some expected stop strings.
             # some strange cases of "##| Instruction: " sneaking through.
             stopping_strings += standard_stopping_strings
@@ -479,6 +492,7 @@ class Handler(BaseHTTPRequestHandler):
                 else:
                     cumulative_reply = reply
 
+            print(cumulative_reply)
             generator = [cumulative_reply]
 
             answer = ''
@@ -668,7 +682,7 @@ class Handler(BaseHTTPRequestHandler):
 
             if debug:
                 print({'edit_template': edit_task, 'req_params': req_params, 'token_count': token_count})
-            
+
             generator = generate_reply(edit_task, req_params, stopping_strings=standard_stopping_strings, is_chat=False)
 
             answer = ''
@@ -716,9 +730,10 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header('Content-Type', 'application/json')
             self.end_headers()
 
-            width, height = [ int(x) for x in default(body, 'size', '1024x1024').split('x') ]  # ignore the restrictions on size
+            width, height = [int(x) for x in
+                             default(body, 'size', '1024x1024').split('x')]  # ignore the restrictions on size
             response_format = default(body, 'response_format', 'url')  # or b64_json
-            
+
             payload = {
                 'prompt': body['prompt'],  # ignore prompt limit of 1000 characters
                 'width': width,
@@ -741,7 +756,8 @@ class Handler(BaseHTTPRequestHandler):
                 if response_format == 'b64_json':
                     resp['data'].extend([{'b64_json': b64_json}])
                 else:
-                    resp['data'].extend([{'url': f'data:image/png;base64,{b64_json}'}])  # yeah it's lazy. requests.get() will not work with this
+                    resp['data'].extend([{
+                                             'url': f'data:image/png;base64,{b64_json}'}])  # yeah it's lazy. requests.get() will not work with this
 
             response = json.dumps(resp)
             self.wfile.write(response.encode('utf-8'))
@@ -762,6 +778,7 @@ class Handler(BaseHTTPRequestHandler):
                     return float_list_to_base64(emb)
                 else:
                     return emb
+
             data = [{"object": "embedding", "embedding": enc_emb(emb), "index": n} for n, emb in enumerate(embeddings)]
 
             response = json.dumps({
@@ -848,7 +865,7 @@ def run_server():
             print('You should install flask_cloudflared manually')
     else:
         print(f'Starting OpenAI compatible api:\nOPENAI_API_BASE=http://{server_addr[0]}:{server_addr[1]}/v1')
-        
+
     server.serve_forever()
 
 
